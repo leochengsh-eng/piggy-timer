@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>猪猪游戏计时器</title>
+  <style>
+    :root{
+      --bg:#0b0f17;
+      --yellow:#F4E46A;
+      --yellow2:#FFF3A6;
+      --blue:#7ED0F5;
+      --blue2:#B7E9FF;
+      --ink:#0f1a2b;
+      --muted: rgba(15,26,43,.62);
+      --stroke: rgba(15,26,43,.22);
+      --shadow: 0 18px 55px rgba(0,0,0,.32);
+      --shadow2: 0 10px 24px rgba(0,0,0,.22);
+    }
+
+    *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", Arial;
+      background:
+        radial-gradient(900px 700px at 20% 10%, rgba(244,228,106,.22), transparent 55%),
+        radial-gradient(900px 700px at 85% 20%, rgba(126,208,245,.20), transparent 60%),
+        var(--bg);
+      min-height:100vh;
+      padding: env(safe-area-inset-top) 14px env(safe-area-inset-bottom) 14px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color: rgba(255,255,255,.92);
+    }
+
+    .wrap{ width:min(980px, 100%); display:grid; gap:12px; }
+
+    .header{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px; flex-wrap:wrap;
+    }
+    .brand{ display:flex; align-items:baseline; gap:10px; }
+    .brand h1{ margin:0; font-size:18px; letter-spacing:.4px; font-weight: 950; }
+    .tag{
+      font-size:12px; padding:7px 10px; border-radius:999px;
+      background: rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.14);
+      color: rgba(255,255,255,.86);
+    }
+    .hint{ font-size:12px; color: rgba(255,255,255,.78); }
+
+    /* ===== Board ===== */
+    .board{
+      position: relative;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,.10);
+      height: min(56vh, 360px);
+      min-height: 270px;
+      background: rgba(255,255,255,.04);
+    }
+    .board::before{
+      content:"";
+      position:absolute; inset:0;
+      background-image: radial-gradient(rgba(15,26,43,.18) 1px, transparent 1px);
+      background-size: 26px 26px;
+      opacity:.25;
+      pointer-events:none;
+      mix-blend-mode: soft-light;
+    }
+
+    .lanes{ position:absolute; inset:0; display:grid; grid-template-columns: 1fr 1fr; }
+
+    .lane{
+      position: relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      user-select:none;
+      touch-action: manipulation;
+      padding: 18px;
+    }
+    .lane.left{
+      background: linear-gradient(180deg, var(--yellow2), var(--yellow));
+      color: var(--ink);
+      border-right: 2px solid rgba(15,26,43,.25);
+    }
+    .lane.right{
+      background: linear-gradient(180deg, var(--blue2), var(--blue));
+      color: var(--ink);
+    }
+
+    /* active ring */
+    .lane.active::after{
+      content:"";
+      position:absolute; inset:0;
+      box-shadow: inset 0 0 0 4px rgba(15,26,43,.22);
+      pointer-events:none;
+      opacity:.6;
+    }
+
+    /* Time text: vertical like your mock (rotated) */
+    .timer{
+      font-variant-numeric: tabular-nums;
+      font-weight: 1000;
+      letter-spacing: .6px;
+      font-size: clamp(60px, 8vw, 92px);
+      line-height: 1;
+      text-shadow: 0 6px 18px rgba(0,0,0,.12);
+      transform: rotate(90deg);
+      transform-origin: center;
+    }
+
+    .nameVertical{
+      position:absolute;
+      top: 18px; bottom: 18px;
+      width: 30px;
+      display:flex; align-items:center; justify-content:center;
+      font-weight: 950;
+      letter-spacing: 1px;
+      color: rgba(15,26,43,.78);
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      user-select:none;
+    }
+    .left .nameVertical{ left: 10px; }
+    .right .nameVertical{ right: 10px; }
+
+    /* sub info bottom */
+    .sub{
+      position:absolute;
+      bottom: 14px;
+      width: 100%;
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      flex-wrap:wrap;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .pill{
+      background: rgba(255,255,255,.35);
+      border: 1px solid rgba(15,26,43,.18);
+      border-radius: 999px;
+      padding: 6px 10px;
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(8px);
+    }
+
+    /* Center End button */
+    .endBtn{
+      position:absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%,-50%);
+      width: 78px;
+      height: 78px;
+      border-radius: 999px;
+      background: rgba(14,66,92,.92);
+      border: 2px solid rgba(255,255,255,.28);
+      box-shadow: 0 16px 40px rgba(0,0,0,.35);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color: rgba(255,255,255,.92);
+      font-weight: 950;
+      letter-spacing: .5px;
+      cursor:pointer;
+      touch-action: manipulation;
+      user-select:none;
+      z-index: 5;
+    }
+    .endBtn:active{ transform: translate(-50%,-50%) scale(.98); }
+    .endBtn small{
+      display:block;
+      opacity:.85;
+      font-size: 11px;
+      font-weight: 800;
+      margin-top: 2px;
+    }
+
+    /* ===== Setup modal ===== */
+    .modal{
+      position: fixed;
+      inset: 0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: env(safe-area-inset-top) 14px env(safe-area-inset-bottom) 14px;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(10px);
+      z-index: 50;
+    }
+    .modal.show{ display:flex; }
+
+    .sheet{
+      width: min(520px, 100%);
+      border-radius: 22px;
+      overflow:hidden;
+      border: 1px solid rgba(255,255,255,.16);
+      box-shadow: var(--shadow);
+      background:
+        linear-gradient(135deg, rgba(244,228,106,.25), rgba(126,208,245,.20)),
+        rgba(18,26,39,.85);
+    }
+    .sheetHeader{
+      padding: 14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border-bottom: 1px solid rgba(255,255,255,.14);
+    }
+    .sheetHeader .title{ font-weight: 950; letter-spacing:.4px; }
+    .sheetHeader .note{ font-size: 12px; opacity:.85; }
+
+    .sheetBody{
+      padding: 14px 16px 16px;
+      display:grid;
+      gap: 12px;
+    }
+
+    .row{ display:grid; gap:10px; }
+    .row.two{ grid-template-columns: 1fr 1fr; }
+    @media (max-width: 420px){ .row.two{ grid-template-columns: 1fr; } }
+
+    label{ font-size: 12px; opacity: .88; }
+    input{
+      width:100%;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.10);
+      color: rgba(255,255,255,.95);
+      padding: 12px 12px;
+      font-size: 16px; /* iOS 防自动放大 */
+      outline: none;
+    }
+    input::placeholder{ color: rgba(255,255,255,.55); }
+
+    .actions{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 2px;
+    }
+    button{
+      border:none;
+      border-radius: 16px;
+      padding: 12px 12px;
+      font-size: 15px;
+      font-weight: 900;
+      color: rgba(255,255,255,.92);
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.18);
+      cursor:pointer;
+      touch-action: manipulation;
+    }
+    button.primary{
+      background: rgba(88,166,255,.22);
+      border-color: rgba(88,166,255,.30);
+    }
+    button.ghost{ background: rgba(255,255,255,.08); }
+    button:active{ transform: translateY(1px); }
+
+    .footerBar{
+      display:flex; justify-content:space-between;
+      gap:10px; flex-wrap:wrap;
+      font-size: 12px;
+      opacity: .82;
+      color: rgba(255,255,255,.82);
+    }
+
+    /* Bottom mini bar */
+    .mini{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      padding: 10px 2px 0;
+    }
+    .mini .leftInfo{
+      font-size:12px;
+      opacity:.88;
+      color: rgba(255,255,255,.78);
+    }
+    .mini .btns{ display:flex; gap:10px; }
+    .mini .btns button{
+      padding: 10px 12px;
+      font-size: 13px;
+      border-radius: 999px;
+    }
+
+    .blink{ animation: blink 1s infinite; }
+    @keyframes blink{ 0%,100%{opacity:1} 50%{opacity:.35} }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div class="brand">
+        <h1>🐷 猪猪游戏计时器</h1>
+        <span class="tag" id="stageTag">设置阶段</span>
+      </div>
+      <div class="hint" id="hintText">设置玩家代号与每回合时长 → 确认后自动从玩家1开始</div>
+    </div>
+
+    <div class="board">
+      <div class="lanes">
+        <div class="lane left" id="lane1" role="button" aria-label="Player 1 area">
+          <div class="nameVertical" id="nameV1">玩家1</div>
+          <div class="timer" id="time1">--:--.-</div>
+          <div class="sub">
+            <span class="pill">回合：<b id="turn1">0</b></span>
+            <span class="pill">本回合已用：<b id="spent1">00:00.0</b></span>
+          </div>
+        </div>
+
+        <div class="lane right" id="lane2" role="button" aria-label="Player 2 area">
+          <div class="nameVertical" id="nameV2">玩家2</div>
+          <div class="timer" id="time2">--:--.-</div>
+          <div class="sub">
+            <span class="pill">回合：<b id="turn2">0</b></span>
+            <span class="pill">本回合已用：<b id="spent2">00:00.0</b></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="endBtn" id="endBtn" role="button" aria-label="End and back to setup">
+        End
+        <small id="endSub">返回设置</small>
+      </div>
+    </div>
+
+    <div class="mini">
+      <div class="leftInfo" id="statusLine">未开始：请先完成设置。</div>
+      <div class="btns">
+        <button class="ghost" id="pauseBtn">暂停</button>
+        <button class="ghost" id="resetBtn">重置</button>
+        <button class="primary" id="setupBtn">设置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Setup modal -->
+  <div class="modal show" id="modal">
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="setup sheet">
+      <div class="sheetHeader">
+        <div>
+          <div class="title">🐽 设置对局</div>
+          <div class="note">确认后自动开始玩家1倒计时</div>
+        </div>
+        <div class="note">🐽</div>
+      </div>
+
+      <div class="sheetBody">
+        <div class="row two">
+          <div class="row">
+            <label>玩家1 代号（黄）</label>
+            <input id="p1Input" placeholder="例如：A / 猪猪1 / 红方" value="玩家1" />
+          </div>
+          <div class="row">
+            <label>玩家2 代号（蓝）</label>
+            <input id="p2Input" placeholder="例如：B / 猪猪2 / 蓝方" value="玩家2" />
+          </div>
+        </div>
+
+        <div class="row">
+          <label>每回合时长（秒）</label>
+          <input id="durInput" type="number" min="5" max="36000" value="60" />
+        </div>
+
+        <div class="actions">
+          <button class="ghost" id="cancelSetup">取消</button>
+          <button class="primary" id="confirmSetup">确认并开始</button>
+        </div>
+
+        <div class="footerBar">
+          <div>规则：<b>操作完按自己色块</b> → 切到对方并开始倒数</div>
+          <div>iPhone：Safari → 分享 → 添加到主屏幕</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const clamp = (n,a,b) => Math.max(a, Math.min(b, n));
+
+    function fmt(ms){
+      ms = Math.max(0, ms);
+      const d = Math.floor(ms / 100);      // 100ms units
+      const t = d % 10;                    // tenths
+      const sec = Math.floor(d / 10);
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0") + "." + t;
+    }
+
+    // ===== State =====
+    const state = {
+      stage: "setup",  // setup | running | paused
+      active: 1,       // whose turn is counting down now
+      turnMs: 60_000,
+      remaining: 60_000,
+      lastTs: null,
+      spentThisTurn: {1:0,2:0},
+      turns: {1:0,2:0},
+      names: {1:"玩家1",2:"玩家2"},
+    };
+
+    // ===== Elements =====
+    const modal = $("modal");
+    const stageTag = $("stageTag");
+    const hintText = $("hintText");
+    const statusLine = $("statusLine");
+
+    const lane1 = $("lane1");
+    const lane2 = $("lane2");
+    const time1 = $("time1");
+    const time2 = $("time2");
+    const spent1 = $("spent1");
+    const spent2 = $("spent2");
+    const turn1 = $("turn1");
+    const turn2 = $("turn2");
+    const nameV1 = $("nameV1");
+    const nameV2 = $("nameV2");
+
+    const endBtn = $("endBtn");
+    const endSub = $("endSub");
+
+    const pauseBtn = $("pauseBtn");
+    const resetBtn = $("resetBtn");
+    const setupBtn = $("setupBtn");
+
+    const p1Input = $("p1Input");
+    const p2Input = $("p2Input");
+    const durInput = $("durInput");
+    const cancelSetup = $("cancelSetup");
+    const confirmSetup = $("confirmSetup");
+
+    function setActiveLane(){
+      lane1.classList.toggle("active", state.stage==="running" && state.active===1);
+      lane2.classList.toggle("active", state.stage==="running" && state.active===2);
+    }
+
+    function render(){
+      if (state.stage === "setup") stageTag.textContent = "设置阶段";
+      else if (state.stage === "running") stageTag.textContent = "计时中";
+      else stageTag.textContent = "已暂停";
+
+      nameV1.textContent = state.names[1];
+      nameV2.textContent = state.names[2];
+
+      // show timers: both show their "last remaining" style like mock (both can show same at start)
+      // But logic: only active side decrements; inactive side shows full turn time or last reset value.
+      // We'll store displayRemaining per player for that.
+      time1.textContent = fmt(state.displayRemaining?.[1] ?? state.turnMs);
+      time2.textContent = fmt(state.displayRemaining?.[2] ?? state.turnMs);
+
+      spent1.textContent = fmt(state.spentThisTurn[1]);
+      spent2.textContent = fmt(state.spentThisTurn[2]);
+      turn1.textContent = String(state.turns[1]);
+      turn2.textContent = String(state.turns[2]);
+
+      setActiveLane();
+
+      if (state.stage === "setup"){
+        hintText.textContent = "设置玩家代号与每回合时长 → 确认后自动从玩家1开始";
+        statusLine.textContent = "未开始：请先完成设置。";
+        endSub.textContent = "返回设置";
+        endBtn.classList.remove("blink");
+        pauseBtn.disabled = true;
+      } else if (state.stage === "running"){
+        hintText.textContent = "操作完按自己色块切到对方；中间 End 返回设置";
+        statusLine.textContent = `轮到：${state.names[state.active]}（第 ${state.turns[state.active]} 回合）`;
+        endSub.textContent = "End";
+        endBtn.classList.remove("blink");
+        pauseBtn.disabled = false;
+        pauseBtn.textContent = "暂停";
+      } else { // paused
+        hintText.textContent = "已暂停：点「继续」恢复；End 返回设置";
+        statusLine.textContent = `暂停中：当前是 ${state.names[state.active]} 的回合`;
+        endSub.textContent = "End";
+        endBtn.classList.remove("blink");
+        pauseBtn.disabled = false;
+        pauseBtn.textContent = "继续";
+      }
+    }
+
+    // ===== Per-player displayed remaining =====
+    function initDisplay(){
+      state.displayRemaining = {1: state.turnMs, 2: state.turnMs};
+    }
+
+    // ===== Timer Loop =====
+    function tick(ts){
+      if (state.stage !== "running") return;
+
+      if (state.lastTs == null) state.lastTs = ts;
+      const dt = ts - state.lastTs;
+      state.lastTs = ts;
+
+      const a = state.active;
+      state.remaining -= dt;
+      state.displayRemaining[a] = state.remaining;
+      state.spentThisTurn[a] += dt;
+
+      if (state.remaining <= 0){
+        state.remaining = 0;
+        state.displayRemaining[a] = 0;
+        state.stage = "paused"; // 到时暂停提醒（更桌游友好）
+        try { navigator.vibrate?.([80,60,80,60,120]); } catch(e){}
+      }
+
+      render();
+      requestAnimationFrame(tick);
+    }
+
+    function startGame(){
+      state.stage = "running";
+      state.active = 1;
+      state.turns[1] = 1;
+      state.turns[2] = 0;
+      state.spentThisTurn[1] = 0;
+      state.spentThisTurn[2] = 0;
+      initDisplay();
+      state.remaining = state.turnMs;
+      state.displayRemaining[1] = state.remaining; // starts counting
+      state.lastTs = null;
+      render();
+      requestAnimationFrame(tick);
+      try { navigator.vibrate?.(25); } catch(e){}
+    }
+
+    // Core rule: press YOUR side to end your action, reset your side, and start opponent immediately.
+    function pressSide(player){
+      if (state.stage !== "running") return;
+      if (player !== state.active) return; // only active player can press (prevents accidental wrong side)
+
+      const from = player;
+      const to = (player === 1 ? 2 : 1);
+
+      // Reset the just-finished player's display for next time
+      state.displayRemaining[from] = state.turnMs;
+      state.spentThisTurn[from] = 0;
+
+      // Switch to opponent and start their countdown
+      state.active = to;
+      state.turns[to] += 1;
+      state.remaining = state.turnMs;
+      state.displayRemaining[to] = state.remaining;
+      state.spentThisTurn[to] = 0;
+
+      state.lastTs = null;
+      render();
+      try { navigator.vibrate?.(18); } catch(e){}
+      requestAnimationFrame(tick);
+    }
+
+    function togglePause(){
+      if (state.stage === "setup") return;
+      if (state.stage === "running"){
+        state.stage = "paused";
+        state.lastTs = null;
+      } else {
+        state.stage = "running";
+        state.lastTs = null;
+        requestAnimationFrame(tick);
+      }
+      render();
+      try { navigator.vibrate?.(12); } catch(e){}
+    }
+
+    function resetRound(){
+      if (state.stage === "setup") return;
+      // Keep names & turnMs; restart from player1 immediately
+      state.stage = "running";
+      state.active = 1;
+      state.turns[1] = 1;
+      state.turns[2] = 0;
+      state.spentThisTurn[1] = 0;
+      state.spentThisTurn[2] = 0;
+      initDisplay();
+      state.remaining = state.turnMs;
+      state.displayRemaining[1] = state.remaining;
+      state.lastTs = null;
+      render();
+      requestAnimationFrame(tick);
+      try { navigator.vibrate?.(15); } catch(e){}
+    }
+
+    function backToSetup(){
+      // End -> return to stage1
+      state.stage = "setup";
+      state.active = 1;
+      state.lastTs = null;
+      // keep last inputs in modal for convenience
+      modal.classList.add("show");
+      render();
+      try { navigator.vibrate?.([40,30,40]); } catch(e){}
+    }
+
+    function applySetupAndStart(){
+      const n1 = (p1Input.value || "").trim() || "玩家1";
+      const n2 = (p2Input.value || "").trim() || "玩家2";
+      let secs = Number(durInput.value || 60);
+      secs = clamp(secs, 5, 36000);
+
+      state.names[1] = n1;
+      state.names[2] = n2;
+      state.turnMs = secs * 1000;
+
+      modal.classList.remove("show");
+      startGame();
+    }
+
+    // ===== Events =====
+    lane1.addEventListener("click", () => pressSide(1));
+    lane2.addEventListener("click", () => pressSide(2));
+    endBtn.addEventListener("click", backToSetup);
+
+    pauseBtn.addEventListener("click", togglePause);
+    resetBtn.addEventListener("click", resetRound);
+    setupBtn.addEventListener("click", () => modal.classList.add("show"));
+
+    cancelSetup.addEventListener("click", () => { modal.classList.remove("show"); render(); });
+    confirmSetup.addEventListener("click", applySetupAndStart);
+
+    // Keyboard optional (desktop / external keyboard)
+    window.addEventListener("keydown", (e) => {
+      if (e.code === "Space"){
+        e.preventDefault();
+        // space = active player presses their own side
+        pressSide(state.active);
+      } else if (e.key.toLowerCase() === "p"){
+        togglePause();
+      } else if (e.key.toLowerCase() === "e"){
+        backToSetup();
+      }
+    }, { passive:false });
+
+    // Initial state
+    initDisplay();
+    render();
+  </script>
+</body>
+</html>
