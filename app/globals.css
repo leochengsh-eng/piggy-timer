@@ -1,0 +1,212 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  z-index: 20;
+  display: none;
+  height: 100vh;
+  width: 18rem;
+  overflow-y: auto;
+  border-color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.72);
+  padding: 1.5rem;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(20px);
+}
+
+.sidebar.left-0 {
+  border-right-width: 1px;
+}
+
+.sidebar.right-0 {
+  border-left-width: 1px;
+}
+
+@media (min-width: 1280px) {
+  .sidebar {
+    display: block;
+  }
+}
+
+.paper {
+  min-height: calc(100vh - 4rem);
+}
+
+.paper-section {
+  break-inside: avoid;
+}
+
+.editable {
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0.75rem 0.9rem;
+  color: #0f172a;
+  outline: none;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.editable:focus {
+  border-color: #fbbf24;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.16);
+}
+
+.editable::placeholder {
+  color: #94a3b8;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background: #0f172a;
+  color: white;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.18);
+}
+
+.btn-secondary {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.8);
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.mini-btn {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0.4rem 0.7rem;
+  font-weight: 800;
+  color: #475569;
+}
+
+.mini-btn:hover {
+  background: white;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@page {
+  size: A4;
+  margin: 14mm;
+}
+
+@media print {
+  html,
+  body {
+    width: 210mm;
+    background: white !important;
+  }
+
+  .no-print,
+  .sidebar,
+  button {
+    display: none !important;
+  }
+
+  main,
+  .paper {
+    background: white !important;
+    box-shadow: none !important;
+  }
+
+  main > div {
+    max-width: none !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+
+  .paper {
+    width: 100% !important;
+    min-height: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+
+  .day-section,
+  .paper-section,
+  article,
+  section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .day-section {
+    padding-top: 10mm !important;
+  }
+
+  input,
+  textarea,
+  select,
+  .editable {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    resize: none !important;
+  }
+
+  textarea {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+}
